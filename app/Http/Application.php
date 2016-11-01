@@ -111,6 +111,12 @@ class Application
                 $requestUrl = trim(str_replace('?' . $_SERVER['QUERY_STRING'], '', $requestUrl));
             }
 
+            if (!isset($this->routsArray[$requestUrl])) {
+                header('HTTP/1.1 400 Bad Request.', true, 400);
+                echo 'Bad Request.';
+                exit(1);
+            }
+
             if ($_SERVER['REQUEST_METHOD'] === $this->routsArray[$requestUrl]['method'] || $this->routsArray[$requestUrl]['method'] === 'ALL') {
                 // 指定實作middleware
                 foreach ($this->routsArray[$requestUrl]['middleware'] as $middlewareObject) {
