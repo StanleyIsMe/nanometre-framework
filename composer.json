@@ -1,0 +1,26 @@
+{
+    "require": {
+        "vlucas/phpdotenv": "^2.3",
+        "firebase/php-jwt": "^4.0",
+        "nesbot/carbon": "^1.21",
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        },
+        "files": [
+            "app/helper.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "App\\": "app/"
+        },
+        "files": [
+            "app/helper.php"
+        ]
+    },
+    "require-dev": {
+        "codeception/codeception": "^2.2"
+    }
+}
