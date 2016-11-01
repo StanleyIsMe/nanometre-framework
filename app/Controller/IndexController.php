@@ -14,7 +14,7 @@ class IndexController extends BaseController
 
     public function index()
     {
-        echo "Hellow World";
+        echo "Hellow nanometre";
     }
 
 }

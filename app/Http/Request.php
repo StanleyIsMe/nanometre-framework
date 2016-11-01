@@ -61,6 +61,19 @@ class Request
     }
 
     /**
+     * 取得request 路由
+     * @return string
+     */
+    public function getRoute()
+    {
+        $route = $_SERVER['REQUEST_URI'];
+        if (isset($_SERVER['QUERY_STRING'])) {
+            $route = trim(str_replace('?' . $_SERVER['QUERY_STRING'], '', $route));
+        }
+        return $route;
+    }
+
+    /**
      * 取得request 參數
      * @param string $key
      * @param mixed|null $def
