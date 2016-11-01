@@ -1,0 +1,14 @@
+# Composer files
+/vendor
+composer.phar
+
+/conf
+/logs
+/download
+/logsTools
+/mail
+.idea
+
+# Env file
+.env
+tests/_output/*
