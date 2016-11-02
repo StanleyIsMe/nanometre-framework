@@ -163,7 +163,7 @@ class Request
     /**
      * 取得上傳的檔案
      */
-    public function getFiles()
+    private function getFiles()
     {
         $fileArray = [];
         foreach ($_FILES as $key => $fileInfo) {

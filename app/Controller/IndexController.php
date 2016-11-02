@@ -16,5 +16,4 @@ class IndexController extends BaseController
     {
         echo "Hellow nanometre";
     }
-
 }

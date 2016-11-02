@@ -86,7 +86,7 @@ class Response
      *
      * @return $this
      */
-    public function sendHeader()
+    private function sendHeader()
     {
         if (count($this->headers) || (200 != $this->httpResponseCode)) {
             foreach ($this->headers as $header) {
@@ -103,7 +103,7 @@ class Response
     /**
      * 送出資料
      */
-    public function sendBody()
+    private function sendBody()
     {
         echo $this->body;die;
     }
