@@ -1,9 +1,7 @@
 <?php
-$app->setRoute('POST', '/auth/login', 'AuthController@login');
+$app->setRoute('GET', '/', 'IndexController@index');
 
-$app->setMiddleware(['Auth','Csrf'], function () use ($app) {
-    $app->setRoute('GET', '/push/getPromotionType', 'IndexController@index');
-});
+
 
 
 

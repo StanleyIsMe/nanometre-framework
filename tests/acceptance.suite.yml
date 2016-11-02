@@ -9,4 +9,4 @@ modules:
    enabled:
        - REST:
            depends: PhpBrowser
-           url: 'http://serviceapp/api/v1/'
+           url: http://localhost

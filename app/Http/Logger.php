@@ -10,21 +10,6 @@ namespace App\Http;
 class Logger
 {
     /**
-     * @var string API log 檔的完整相對路徑 : 目錄
-     */
-    private $dirName = '';
-
-    /**
-     * @var string API log 檔的完整相對路徑 : 檔案
-     */
-    private $completeFileName = '';
-
-    /**
-     * @var string 寫入 Log 的訊息
-     */
-    private $message = '';
-
-    /**
      * constructor
      */
     public function __construct()
@@ -40,17 +25,26 @@ class Logger
      */
     public function writeLog($dirName, $message = '')
     {
-        $this->message = (string) $message;
-        $this->dirName = getenv('LOG_DIRECT') . '/' . $dirName;
-        $this->completeFileName = $this->dirName . '/' . now()->format('Ymd');
+        $message = (string) $message;
 
-        // 檢查目錄
-        if (!is_dir($this->dirName)) {
-            mkdir($this->dirName, 0750, true);
+        if (empty(getenv('LOG_DIRECT'))) {
+            $dirName = APPLICATION_PATH . "/../logs/{$dirName}";
+        } else {
+            $dirName = getenv('LOG_DIRECT') . '/' . $dirName;
         }
 
-        $content = "[" . now()->toDateTimeString() . "]\t" . $this->message . "\n";
-        file_put_contents($this->completeFileName, $content, FILE_APPEND | LOCK_EX);
+        $completeFileName = $dirName . '/' . now()->format('Ymd');
+
+        // 檢查目錄
+        if (!is_dir($dirName)) {
+            mkdir($dirName, 0750, true);
+        }
+
+        $content = "\n[" . now()->toDateTimeString() . "]\n";
+        $content .= "ip: " . request()->getClientIp() . PHP_EOL;
+        $content .= "route: " . request()->getRoute() . PHP_EOL;
+        $content .= "message: {$message}\n";
+        file_put_contents($completeFileName, $content, FILE_APPEND | LOCK_EX);
     }
 }
 
