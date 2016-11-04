@@ -15,8 +15,9 @@ requires (dev)
 * codeception/codeception: 2.2.*
 
 ## Installation
-1. composer install
-2. composer dump-autoload
+1. git clone xxxxxxxxxxxx
+2. composer install
+3. composer dump-autoload
 
 ## Usage
 
