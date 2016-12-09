@@ -106,28 +106,31 @@ class Application
     public function run()
     {
         try {
-            $requestUrl = $_SERVER['REQUEST_URI'];
-            if (isset($_SERVER['QUERY_STRING'])) {
-                $requestUrl = trim(str_replace('?' . $_SERVER['QUERY_STRING'], '', $requestUrl));
-            }
-
-            if (!isset($this->routsArray[$requestUrl])) {
-                header('HTTP/1.1 400 Bad Request.', true, 400);
-                echo 'Bad Request.';
+            // 判斷請求路由是否有相對應
+            if (($dispatchRouteInfo = $this->getDispatch()) === null) {
+                header('HTTP/1.1 404 Not Found.', true, 404);
+                echo 'Not Found.';
                 exit(1);
-            }
+            };
 
-            if ($_SERVER['REQUEST_METHOD'] === $this->routsArray[$requestUrl]['method'] || $this->routsArray[$requestUrl]['method'] === 'ALL') {
+            if ($_SERVER['REQUEST_METHOD'] === $this->routsArray[$dispatchRouteInfo['route']]['method'] || $this->routsArray[$dispatchRouteInfo['route']]['method'] === 'ALL') {
                 // 指定實作middleware
-                foreach ($this->routsArray[$requestUrl]['middleware'] as $middlewareObject) {
+                foreach ($this->routsArray[$dispatchRouteInfo['route']]['middleware'] as $middlewareObject) {
                     $this->make($middlewareObject);
                 }
 
                 // 指定實作的controller
-                $controllerObj = $this->routsArray[$requestUrl]['instance'];
-                $action = $this->routsArray[$requestUrl]['action'];
+                $controllerObj = $this->routsArray[$dispatchRouteInfo['route']]['instance'];
+                $action = $this->routsArray[$dispatchRouteInfo['route']]['action'];
+
                 $controllerInstance = $this->make($controllerObj);
-                $controllerInstance->$action();
+
+                call_user_func_array([
+                    $controllerInstance,
+                    $action
+                ], $dispatchRouteInfo['param']);
+
+
             } else {
                 header('HTTP/1.1 405 Method Not Allowed.', true, 405);
                 echo 'The ajax method is not correctly.';
@@ -136,6 +139,50 @@ class Application
         } catch (\Exception $e) {
             throw $e;
         }
+    }
+
+    /**
+     * 取得路由分配
+     * @return array|null
+     */
+    private function getDispatch()
+    {
+        $requestUrl = $_SERVER['REQUEST_URI'];
+        if (isset($_SERVER['QUERY_STRING'])) {
+            $requestUrl = trim(str_replace('?' . $_SERVER['QUERY_STRING'], '', $requestUrl));
+        }
+
+        $requestUrlDetail = explode('/', $requestUrl);
+
+        foreach ($this->routsArray as $rout => $detail) {
+            $ruleUrlDetail = explode('/', $rout);
+            if (count($requestUrlDetail) !== count($ruleUrlDetail)) {
+                continue;
+            }
+
+            $partOfDiff = array_diff($requestUrlDetail, $ruleUrlDetail);
+            $isValidRequest = true;
+            $param = [];
+            foreach ($partOfDiff as $index => $content) {
+                if (isset($ruleUrlDetail[$index])) {
+                    preg_match('#\{\w+\}#', $ruleUrlDetail[$index], $match);
+                    if (!empty($match)) {
+                        $param[] = $requestUrlDetail[$index];
+                    } else {
+                        $isValidRequest = false;
+                        break;
+                    }
+                } else {
+                    $isValidRequest = false;
+                    break;
+                }
+            }
+
+            if ($isValidRequest) {
+                return ['route' => $rout, 'param' => $param];
+            }
+        }
+        return null;
     }
 
     /**
@@ -234,7 +281,7 @@ class Application
 
         $msg = [
             'error' => [
-                'message' => 'Server Error',
+                'message' => (getenv('APPLICATION_ENV') !== 'PRODUCTION') ? $message : 'Server Error',
                 'status'  => 0
             ]
         ];
