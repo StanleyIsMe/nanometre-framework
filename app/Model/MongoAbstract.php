@@ -51,7 +51,7 @@ abstract class MongoAbstract
                     $option["password"] = $pass;
                 }
 
-                self::$connection = new MongoClient("mongodb://{$host}:{$port}", $option);
+                self::$_connection = new MongoClient("mongodb://{$host}:{$port}", $option);
             }
         }
     }
