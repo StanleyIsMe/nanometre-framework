@@ -212,6 +212,7 @@ class Application
      * @param string $method
      * @param string $url
      * @param string $target
+     * @return $this
      */
     public function setRoute($method = 'ALL', $url = 'index', $target = 'indexController@index')
     {
@@ -229,7 +230,7 @@ class Application
 
             }
         }
-
+        return $this;
     }
 
     /**
@@ -272,11 +273,11 @@ class Application
              */
             $e = $e[0];
             $message = "{$e->getFile()} => 行數:{$e->getLine()} => 原因:{$e->getMessage()}";
-            $this->make('logger')->writeLog('Exception', $message);
+            $this->make('logger')->writeLog('Exception', $message, true);
         } else {
             $e = array_combine(['number', 'message', 'file', 'line', 'context'], array_pad($e, 5, null));
             $message = "{$e['file']} => 行數:{$e['line']} => 原因:{$e['message']}";
-            $this->make('logger')->writeLog('Error', $message);
+            $this->make('logger')->writeLog('Error', $message, true));
         }
 
         $msg = [
