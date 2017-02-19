@@ -86,7 +86,7 @@ class Response
      *
      * @return $this
      */
-    private function sendHeader()
+    public function sendHeader()
     {
         if (count($this->headers) || (200 != $this->httpResponseCode)) {
             foreach ($this->headers as $header) {
@@ -103,9 +103,10 @@ class Response
     /**
      * 送出資料
      */
-    private function sendBody()
+    public function sendBody()
     {
-        echo $this->body;die;
+        echo $this->body;
+        die;
     }
 
     /**
@@ -117,6 +118,19 @@ class Response
         $this->sendHeader();
         $this->sendBody();
         ob_get_clean();
-        exit;
+        exit(1);
+    }
+
+    /**
+     * 取得回應內容
+     *
+     * @return array|mixed
+     */
+    public function getResponseContent()
+    {
+        if (empty($this->body)) {
+            return [];
+        }
+        return $this->body;
     }
 }

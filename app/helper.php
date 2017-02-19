@@ -122,13 +122,51 @@ if (!function_exists('logger')) {
      *
      * @param string $dirName
      * @param string $message
+     * @param bool $isDetail
      * @return \App\Http\Logger
      */
-    function logger($dirName = '', $message = '')
+    function logger($dirName = '', $message = '', $isDetail = false)
     {
         if (trim($dirName) != '' && trim($message) != '') {
-            app()->make('logger')->writeLog($dirName, $message);
+            app()->make('logger')->writeLog($dirName, $message, $isDetail);
         }
         return app()->make('logger');
     }
 }
+
+if (!function_exists('keyOfIndex')) {
+    /**
+     * 某key值當index
+     *
+     * @param array $input
+     * @param string $key
+     * @return array
+     */
+    function keyOfIndex(array &$input, $key)
+    {
+        $idToKey = [];
+        foreach ($input as $doc) {
+            if (!isset($doc[$key])) {
+                throw new InvalidArgumentException("{$key} is not exist");
+            }
+            $idToKey[$doc[$key]] = $doc;
+        }
+        $input = $idToKey;
+        return $input;
+    }
+}
+
+if (!function_exists('ifNotExist')) {
+    /**
+     * 升級php7後，即可用 ?? 替換
+     *
+     * @param mixed $input
+     * @param mixed $def
+     * @return mixed
+     */
+    function ifNotExist($input, $def)
+    {
+        return isset($input) ? $input : $def;
+    }
+}
+
