@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Model\Mongodb\MongoFactory;
+use App\Model\Database\Member;
 class IndexController extends BaseController
 {
     /**
@@ -14,6 +16,6 @@ class IndexController extends BaseController
 
     public function index()
     {
-        echo "Hellow nanometre";
+        echo 'Hello Nanometre';
     }
 }

@@ -1,5 +1,5 @@
 <?php
-namespace App\Model;
+namespace App\Model\Mongodb;
 use Exception;
 class MongoException extends Exception
 {

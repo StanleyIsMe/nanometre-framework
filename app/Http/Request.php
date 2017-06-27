@@ -44,6 +44,7 @@ class Request
 
     /**
      * 是否為ajax行為
+     *
      * @return bool
      */
     public function isXmlHttpRequest()
@@ -53,6 +54,7 @@ class Request
 
     /**
      * 取得request 方法
+     *
      * @return string
      */
     public function getMethod()
@@ -62,6 +64,7 @@ class Request
 
     /**
      * 取得request 路由
+     *
      * @return string
      */
     public function getRoute()
@@ -75,6 +78,7 @@ class Request
 
     /**
      * 取得request 參數
+     *
      * @param string $key
      * @param mixed|null $def
      * @return mixed
@@ -93,6 +97,7 @@ class Request
 
     /**
      * 取得所有request 參數
+     *
      * @return array
      */
     public function getParams()
@@ -143,21 +148,26 @@ class Request
 
     /**
      * 取得 request 表頭
+     *
      * @param string $name
      * @param string $default
      * @return string
      */
     public function getHeader($name, $default = '')
     {
-        $name = ucfirst($name);
-        $headers = getallheaders();
-
-        if ($headers) {
-            return isset($headers[$name]) ? $headers[$name] : $default;
+        if (!function_exists('getallheaders')) {
+            $headers = false;
+            foreach ($_SERVER as $name => $value) {
+                if (substr($name, 0, 5) === 'HTTP_') {
+                    $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+                }
+            }
         } else {
-            return $default;
+            $headers = getallheaders();
         }
 
+        $name = ucfirst($name);
+        return ($headers && isset($headers[$name])) ? $headers[$name] : $default;
     }
 
     /**
@@ -179,6 +189,7 @@ class Request
 
     /**
      * 是否使用合法method
+     *
      * @param $method
      * @return bool
      */

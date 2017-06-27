@@ -1,5 +1,5 @@
 <?php
-namespace App\Model;
+namespace App\Model\Mongodb;
 
 /**
  * 會員資料

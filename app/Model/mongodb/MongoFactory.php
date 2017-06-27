@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Model;
+namespace App\Model\Mongodb;
 
 use MongoClient;
 
@@ -61,7 +61,7 @@ abstract class MongoFactory
      */
     public static function getInstance($table, $suffix = 'Mongo')
     {
-        $className = 'App\\Model\\' . ucfirst($table) . $suffix;
+        $className = 'App\\Model\\Mongodb\\' . ucfirst($table) . $suffix;
 
         if (!class_exists($className)) {
             throw new MongoException("Object {$className} not found");

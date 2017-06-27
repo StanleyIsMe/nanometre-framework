@@ -36,7 +36,9 @@ class Validator
         'bool',
         'array',
         'numeric',
-        'date'
+        'date',
+        'email',
+        'regex'
     ];
 
     /**
@@ -344,6 +346,32 @@ class Validator
         $date = date_parse($value);
 
         return checkdate($date['month'], $date['day'], $date['year']);
+    }
+
+    /**
+     * 檢核是否符合email格式
+     *
+     * @param  mixed $value
+     * @return bool
+     */
+    protected function validateEmail($value)
+    {
+        return filter_var($value, FILTER_VALIDATE_EMAIL) !== false;
+    }
+
+    /**
+     * 檢核是否符合正則式
+     *
+     * @param  mixed   $value
+     * @param  array   $parameter
+     * @return bool
+     */
+    protected function validateRegex($value, $parameter)
+    {
+        if (!is_string($value) && !is_numeric($value)) {
+            return false;
+        }
+        return preg_match($parameter, $value) > 0;
     }
 
     /**

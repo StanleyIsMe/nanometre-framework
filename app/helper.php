@@ -1,7 +1,6 @@
 <?php
-
 use Carbon\Carbon;
-use App\Http\Application;
+use App\Http\Container;
 
 /**
  * helper 工具
@@ -9,16 +8,19 @@ use App\Http\Application;
 
 if (!function_exists('app')) {
     /**
-     * 取得Application instance或者其他object instance.
+     * Container instance或者其他object instance.
      *
-     * @return mixed|\App\Http\Application
+     * @param null $objectName
+     * @param array $param
+     * @return mixed|\App\Http\Container
+     * @throws \Exception
      */
     function app($objectName = null, $param = [])
     {
         if ($objectName === null) {
-            return Application::getInstance();
+            return Container::getInstance();
         }
-        return Application::getInstance()->make($objectName, $param);
+        return Container::getInstance()->build($objectName, $param);
     }
 }
 
@@ -144,6 +146,10 @@ if (!function_exists('keyOfIndex')) {
      */
     function keyOfIndex(array &$input, $key)
     {
+        if (empty($input)) {
+            return [];
+        }
+
         $idToKey = [];
         foreach ($input as $doc) {
             if (!isset($doc[$key])) {
@@ -167,6 +173,25 @@ if (!function_exists('ifNotExist')) {
     function ifNotExist($input, $def)
     {
         return isset($input) ? $input : $def;
+    }
+}
+
+if (!function_exists('randString')) {
+    /**
+     * 隨機字串組合
+     *
+     * @param int $length
+     * @param string $keySpace
+     * @return string
+     */
+    function randString($length, $keySpace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+    {
+        $str = '';
+        $max = mb_strlen($keySpace, '8bit') - 1;
+        for ($i = 0; $i < $length; ++$i) {
+            $str .= $keySpace[rand(0, $max)];
+        }
+        return $str;
     }
 }
 

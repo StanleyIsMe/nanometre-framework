@@ -3,7 +3,7 @@
 namespace App\Http;
 
 use Closure;
-use ReflectionClass;
+use Illuminate\Database\Capsule\Manager as Capsule;
 
 /**
  * 主程式
@@ -20,25 +20,11 @@ class Application
     private static $instance = [];
 
     /**
-     * 儲存物件 instance
-     *
-     * @var array
-     */
-    private $instanceArray = [];
-
-    /**
      * 儲存路由
      *
      * @var array
      */
     private $routsArray = [];
-
-    /**
-     * 儲存物件別名
-     *
-     * @var array
-     */
-    private $aliases = [];
 
     /**
      * 儲存中間層object
@@ -52,12 +38,14 @@ class Application
      */
     public function __construct()
     {
-        $this->registerAliases();
-
         // setting catch all exception & error function
         set_error_handler([$this, 'errorHandler']);
         set_exception_handler([$this, 'errorHandler']);
         register_shutdown_function([$this, 'errorHandler']);
+
+        foreach (Request::$validMethodTypes as $method) {
+            $this->routsArray[$method] = [];
+        }
     }
 
     /**
@@ -74,38 +62,20 @@ class Application
     }
 
     /**
-     * 物件實例化array,實現single pattern
-     *
-     * @param string $alias
-     * @param array $param
-     * @return object
-     * @throws \Exception
-     */
-    public function make($alias, $param = [])
-    {
-        if (isset($this->instanceArray[$alias])) {
-            return $this->instanceArray[$alias];
-        }
-
-        if ((isset($this->aliases[$alias]) && class_exists($this->aliases[$alias])) || class_exists($alias)) {
-            $objectName = isset($this->aliases[$alias]) ? $this->aliases[$alias] : $alias;
-
-            $this->instanceArray[$alias] = call_user_func_array([
-                new ReflectionClass($objectName),
-                'newInstance'
-            ], $param);
-            return $this->instanceArray[$alias];
-        } else {
-            throw new \Exception("{$alias} is not a object");
-        }
-    }
-
-    /**
      * 運行controller
      */
     public function run()
     {
         try {
+            $requestMethod = $_SERVER['REQUEST_METHOD'];
+
+            // 判斷請求Method是否正確
+            if (!Request::isValidMethod($requestMethod)) {
+                header('HTTP/1.1 405 Method Not Allowed.', true, 405);
+                echo 'The ajax method is not correctly.';
+                exit(1);
+            }
+
             // 判斷請求路由是否有相對應
             if (($dispatchRouteInfo = $this->getDispatch()) === null) {
                 header('HTTP/1.1 404 Not Found.', true, 404);
@@ -113,29 +83,23 @@ class Application
                 exit(1);
             };
 
-            if ($_SERVER['REQUEST_METHOD'] === $this->routsArray[$dispatchRouteInfo['route']]['method'] || $this->routsArray[$dispatchRouteInfo['route']]['method'] === 'ALL') {
-                // 指定實作middleware
-                foreach ($this->routsArray[$dispatchRouteInfo['route']]['middleware'] as $middlewareObject) {
-                    $this->make($middlewareObject);
-                }
+            $routBehavior = $this->routsArray[$requestMethod][$dispatchRouteInfo['route']];
 
-                // 指定實作的controller
-                $controllerObj = $this->routsArray[$dispatchRouteInfo['route']]['instance'];
-                $action = $this->routsArray[$dispatchRouteInfo['route']]['action'];
-
-                $controllerInstance = $this->make($controllerObj);
-
-                call_user_func_array([
-                    $controllerInstance,
-                    $action
-                ], $dispatchRouteInfo['param']);
-
-
-            } else {
-                header('HTTP/1.1 405 Method Not Allowed.', true, 405);
-                echo 'The ajax method is not correctly.';
-                exit(1);
+            // 指定實作middleware
+            foreach ($routBehavior['middleware'] as $middlewareObject) {
+                app($middlewareObject);
             }
+
+            // 指定實作的controller
+            $controllerObj = $routBehavior['instance'];
+            $action = $routBehavior['action'];
+
+            $controllerInstance = app($controllerObj);
+
+            call_user_func_array([
+                $controllerInstance,
+                $action
+            ], $dispatchRouteInfo['param']);
         } catch (\Exception $e) {
             throw $e;
         }
@@ -148,13 +112,20 @@ class Application
     private function getDispatch()
     {
         $requestUrl = $_SERVER['REQUEST_URI'];
+        $requestMethod = $_SERVER['REQUEST_METHOD'];
+
         if (isset($_SERVER['QUERY_STRING'])) {
             $requestUrl = trim(str_replace('?' . $_SERVER['QUERY_STRING'], '', $requestUrl));
         }
 
+        // 無變數route 先判斷
+        if (isset($this->routsArray[$requestMethod][$requestUrl])) {
+            return ['route' => $requestUrl, 'param' => []];
+        }
+
         $requestUrlDetail = explode('/', $requestUrl);
 
-        foreach ($this->routsArray as $rout => $detail) {
+        foreach ($this->routsArray[$requestMethod] as $rout => $detail) {
             $ruleUrlDetail = explode('/', $rout);
             if (count($requestUrlDetail) !== count($ruleUrlDetail)) {
                 continue;
@@ -193,7 +164,7 @@ class Application
      *
      * @throws \Exception
      */
-    public function setMiddleware(array $middlewareArray = ['Auth'], Closure $callback)
+    public function setMiddleware(array $middlewareArray, Closure $callback)
     {
         foreach ($middlewareArray as $middlewareName) {
             $middlewareObject = "App\\Middleware\\{$middlewareName}Middleware";
@@ -214,37 +185,22 @@ class Application
      * @param string $target
      * @return $this
      */
-    public function setRoute($method = 'ALL', $url = 'index', $target = 'indexController@index')
+    public function setRoute($method = 'GET', $url = 'index', $target = 'indexController@index')
     {
         $method = strtoupper($method);
-        if ($method === 'ALL' || Request::isValidMethod($method)) {
+        if (Request::isValidMethod($method)) {
             list($controller, $action) = explode('@', $target);
             $controllerObj = 'App\\Controller' . '\\' . $controller;
-            if (!isset($this->routsArray[$url]) && class_exists($controllerObj) && method_exists($controllerObj, $action)) {
-                $this->routsArray[$url] = [
+            if (!isset($this->routsArray[$method][$url]) && class_exists($controllerObj) && method_exists($controllerObj, $action)) {
+                $this->routsArray[$method][$url] = [
                     'middleware' => $this->middlewareArray,
                     'instance'   => $controllerObj,
                     'method'     => $method,
-                    'action'     => $action
+                    'action'     => $action,
                 ];
-
             }
         }
         return $this;
-    }
-
-    /**
-     * 登錄物件別名
-     */
-    public function registerAliases()
-    {
-        $this->aliases = [
-            'app'       => '\App\Http\Application',
-            'request'   => '\App\Http\Request',
-            'response'  => '\App\Http\Response',
-            'validator' => '\App\Http\Validator',
-            'logger'    => '\App\Http\Logger'
-        ];
     }
 
     /**
@@ -273,11 +229,11 @@ class Application
              */
             $e = $e[0];
             $message = "{$e->getFile()} => 行數:{$e->getLine()} => 原因:{$e->getMessage()}";
-            $this->make('logger')->writeLog('Exception', $message, true);
+            app('logger')->writeLog('Exception', $message);
         } else {
             $e = array_combine(['number', 'message', 'file', 'line', 'context'], array_pad($e, 5, null));
             $message = "{$e['file']} => 行數:{$e['line']} => 原因:{$e['message']}";
-            $this->make('logger')->writeLog('Error', $message, true));
+            app('logger')->writeLog('Error', $message);
         }
 
         $msg = [
@@ -287,10 +243,30 @@ class Application
             ]
         ];
 
-        response()->setHttpResponseCode(500)
-                  ->setHeader('Content-type', 'application/json')
-                  ->setBody(json_encode($msg, JSON_UNESCAPED_UNICODE))
-                  ->sendResponse();
+        response()->json($msg, 500);
+    }
+
+    /**
+     * 建立 laravel ORM
+     */
+    private function setupDatabaseORM()
+    {
+        $capsule = new Capsule();
+
+        $capsule->addConnection([
+            'driver'    => 'mysql',
+            'host'      => getenv(APPLICATION_ENV . 'MYSQL_HOST'),
+            'port'      => getenv(APPLICATION_ENV . 'MYSQL_PORT'),
+            'database'  => getenv(APPLICATION_ENV . 'MYSQL_DB_NAME'),
+            'username'  => getenv(APPLICATION_ENV . 'MYSQL_USER'),
+            'password'  => getenv(APPLICATION_ENV . 'MYSQL_PASS'),
+            'charset'   => 'utf8',
+            'collation' => 'utf8_unicode_ci',
+            'prefix'    => '',
+        ]);
+
+        $capsule->setAsGlobal();
+        $capsule->bootEloquent();
     }
 }
 

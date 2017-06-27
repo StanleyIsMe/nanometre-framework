@@ -29,7 +29,7 @@ class Logger
         $message = (string) $message;
 
         if (empty(getenv('LOG_DIRECT'))) {
-            $dirName = APPLICATION_PATH . "/logs/{$dirName}";
+            $dirName = APPLICATION_PATH . "/../logs/{$dirName}";
         } else {
             $dirName = getenv('LOG_DIRECT') . '/' . $dirName;
         }
@@ -48,8 +48,8 @@ class Logger
 
         // 是否額外紀錄req/res內容
         if ($isDetail) {
-            $content .= "Request: " . json_encode(request()->getParams()) . PHP_EOL;
-            $content .= "Response: " . json_encode(response()->getResponseContent()) . PHP_EOL;
+            $content .= "Request: " . json_encode(request()->getParams(), JSON_UNESCAPED_UNICODE) . PHP_EOL;
+            $content .= "Response: " . json_encode(response()->getResponseContent(), JSON_UNESCAPED_UNICODE) . PHP_EOL;
         }
 
         file_put_contents($completeFileName, $content, FILE_APPEND | LOCK_EX);

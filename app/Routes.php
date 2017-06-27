@@ -1,5 +1,5 @@
 <?php
-$app->setRoute('GET', '/', 'IndexController@index');
+$app->setRoute('POST', '/auth/login', 'IndexController@index');
 
 
 

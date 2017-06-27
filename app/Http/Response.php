@@ -63,7 +63,7 @@ class Response
     public function setHttpResponseCode($code)
     {
         if (!is_int($code) || (100 > $code) || (599 < $code)) {
-            throw new \Exception('Invalid HTTP response code');
+            throw new \Exception("Invalid HTTP status code {$code} is not valid.");
         }
         $this->httpResponseCode = $code;
         return $this;
@@ -77,6 +77,9 @@ class Response
      */
     public function setBody($content)
     {
+        if ($content === null || !is_string($content)) {
+            throw new \UnexpectedValueException('The Response content must be a string');
+        }
         $this->body = $content;
         return $this;
     }
@@ -88,7 +91,11 @@ class Response
      */
     public function sendHeader()
     {
-        if (count($this->headers) || (200 != $this->httpResponseCode)) {
+        if (headers_sent()) {
+            return $this;
+        }
+
+        if (count($this->headers) || (200 !== $this->httpResponseCode)) {
             foreach ($this->headers as $header) {
                 header($header['name'] . ': ' . $header['value'], $header['replace']);
             }
@@ -106,7 +113,6 @@ class Response
     public function sendBody()
     {
         echo $this->body;
-        die;
     }
 
     /**
@@ -132,5 +138,35 @@ class Response
             return [];
         }
         return $this->body;
+    }
+
+    /**
+     * 送出json回應
+     *
+     * @param mixed $data
+     * @param int $status
+     * @throws \Exception
+     */
+    public function json($data = [], $status = 200)
+    {
+        $this->setHttpResponseCode($status)
+             ->setHeader('Content-type', 'application/json')
+             ->setBody(json_encode($data, JSON_UNESCAPED_UNICODE))
+             ->sendResponse();
+    }
+
+    /**
+     * 送出html/text回應
+     *
+     * @param mixed $data
+     * @param int $status
+     * @throws \Exception
+     */
+    public function html($data = [], $status = 200)
+    {
+        $this->setHttpResponseCode($status)
+             ->setHeader('Content-type', 'text/html; charset=utf-8')
+             ->setBody(json_encode($data, JSON_UNESCAPED_UNICODE))
+             ->sendResponse();
     }
 }
